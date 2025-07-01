@@ -70,11 +70,11 @@ exports.handler = async function (event, context) {
         if (fetchError && fetchError.name === 'AbortError') {
           // Si es un error de timeout, ir directo a default.jpg
           triedDefault = true;
-          const defaultImagePath = path.join(__dirname, '..', 'images', 'default.jpg');
+          const defaultImagePath = path.join(__dirname, 'images', 'default.jpg');
           buffer = await fs.readFile(defaultImagePath);
           contentType = 'image/jpeg';
         } else {
-          const imagePath = path.join(__dirname, '..', 'images', `${ip}.jpg`);
+          const imagePath = path.join(__dirname, 'images', `${ip}.jpg`);
           buffer = await fs.readFile(imagePath);
           contentType = 'image/jpeg';
         }
@@ -82,7 +82,7 @@ exports.handler = async function (event, context) {
         // Si tampoco se encuentra la imagen local, intentar con default.jpg (si no se intentó ya)
         if (!triedDefault) {
           try {
-            const defaultImagePath = path.join(__dirname, '..', 'images', 'default.jpg');
+            const defaultImagePath = path.join(__dirname, 'images', 'default.jpg');
             buffer = await fs.readFile(defaultImagePath);
             contentType = 'image/jpeg';
           } catch (defaultErr) {

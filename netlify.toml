@@ -5,3 +5,6 @@
   from = "/api/image-proxy"
   to = "/.netlify/functions/image-proxy"
   status = 200
+
+[functions."image-proxy"]
+included_files = ["netlify/functions/image-proxy/images/**"]
