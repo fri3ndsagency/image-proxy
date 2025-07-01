@@ -100,7 +100,6 @@ exports.handler = async function (event, context) {
       statusCode: 200,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=60', // Caché de 1 minuto
         'Access-Control-Allow-Origin': '*' // Permitir CORS
       },
       body: buffer.toString('base64'),
