@@ -39,16 +39,61 @@ exports.handler = async function (event, context) {
     }
 
     // Realizar la solicitud a la URL de la imagen con encabezados
-    const response = await fetch(url, { headers });
-
-    // Verificar si la solicitud fue exitosa
-    if (!response.ok) {
-      throw new Error(`Error al obtener la imagen: ${response.statusText}`);
+    let response;
+    let fetchError = null;
+    const fetchTimeoutMs = 5000; // 5 segundos
+    try {
+      // Implementar timeout manual usando Promise.race
+      const controller = new (require('abort-controller'))();
+      const timeout = setTimeout(() => controller.abort(), fetchTimeoutMs);
+      response = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeout);
+      // Verificar si la solicitud fue exitosa
+      if (!response.ok) {
+        throw new Error(`Error al obtener la imagen: ${response.statusText}`);
+      }
+    } catch (err) {
+      fetchError = err;
     }
 
-    // Obtener el tipo de contenido y los bytes de la imagen
-    const contentType = response.headers.get('content-type');
-    const buffer = await response.buffer();
+    let contentType, buffer;
+    if (!fetchError && response) {
+      // Obtener el tipo de contenido y los bytes de la imagen
+      contentType = response.headers.get('content-type');
+      buffer = await response.buffer();
+    } else {
+      // Si fetch falla, intentar leer la imagen local
+      const fs = require('fs').promises;
+      const path = require('path');
+      let triedDefault = false;
+      try {
+        if (fetchError && fetchError.name === 'AbortError') {
+          // Si es un error de timeout, ir directo a default.jpg
+          triedDefault = true;
+          const defaultImagePath = path.join(__dirname, '..', 'images', 'default.jpg');
+          buffer = await fs.readFile(defaultImagePath);
+          contentType = 'image/jpeg';
+        } else {
+          const imagePath = path.join(__dirname, '..', 'images', `${ip}.jpg`);
+          buffer = await fs.readFile(imagePath);
+          contentType = 'image/jpeg';
+        }
+      } catch (localErr) {
+        // Si tampoco se encuentra la imagen local, intentar con default.jpg (si no se intentó ya)
+        if (!triedDefault) {
+          try {
+            const defaultImagePath = path.join(__dirname, '..', 'images', 'default.jpg');
+            buffer = await fs.readFile(defaultImagePath);
+            contentType = 'image/jpeg';
+          } catch (defaultErr) {
+            // Si tampoco se encuentra la imagen default, lanzar error
+            throw new Error(`No se pudo recuperar la imagen ni remotamente, ni localmente, ni la imagen por defecto: ${fetchError ? fetchError.message : ''} / ${localErr.message} / ${defaultErr.message}`);
+          }
+        } else {
+          throw new Error(`No se pudo recuperar la imagen ni remotamente, ni la imagen por defecto: ${fetchError ? fetchError.message : ''} / ${localErr.message}`);
+        }
+      }
+    }
 
     // Devolver la imagen con los encabezados adecuados
     return {
@@ -62,6 +107,7 @@ exports.handler = async function (event, context) {
       isBase64Encoded: true
     };
   } catch (error) {
+    console.log(error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: `Error en el proxy: ${error.message}` })
