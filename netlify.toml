@@ -7,4 +7,4 @@
   status = 200
 
 [functions."image-proxy"]
-included_files = ["netlify/functions/image-proxy/images/**"]
+included_files = ["netlify/functions/images/**"]
