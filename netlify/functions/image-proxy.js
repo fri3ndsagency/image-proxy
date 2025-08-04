@@ -29,7 +29,10 @@ exports.handler = async function (event, context) {
     } catch (e) {
       ip = null;
     }
-
+    console.log('ip', ip);
+    console.log('BASIC_AUTH_IPS', BASIC_AUTH_IPS);
+    console.log('BASIC_AUTH_USER', BASIC_AUTH_USER);
+    console.log('BASIC_AUTH_PASS', BASIC_AUTH_PASS);
     // Construir encabezados para la solicitud
     const headers = {};
     // Agregar autenticación básica solo si la IP está en la lista
