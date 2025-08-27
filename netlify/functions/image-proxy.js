@@ -30,16 +30,19 @@ exports.handler = async function (event, context) {
       ip = null;
     }
     console.log('ip', ip);
-    console.log('BASIC_AUTH_IPS', BASIC_AUTH_IPS);
+    //console.log('BASIC_AUTH_IPS', BASIC_AUTH_IPS);
     console.log('BASIC_AUTH_USER', BASIC_AUTH_USER);
     console.log('BASIC_AUTH_PASS', BASIC_AUTH_PASS);
     // Construir encabezados para la solicitud
     const headers = {};
     // Agregar autenticación básica solo si la IP está en la lista
-    if (ip && BASIC_AUTH_IPS.includes(ip) && BASIC_AUTH_USER && BASIC_AUTH_PASS) {
+    /*if (ip && BASIC_AUTH_IPS.includes(ip) && BASIC_AUTH_USER && BASIC_AUTH_PASS) {
       const basicAuth = Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
       headers['Authorization'] = `Basic ${basicAuth}`;
-    }
+    }*/
+
+    const basicAuth = Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
+    headers['Authorization'] = `Basic ${basicAuth}`;
 
     // Realizar la solicitud a la URL de la imagen con encabezados
     let response;
@@ -49,6 +52,7 @@ exports.handler = async function (event, context) {
       // Implementar timeout manual usando Promise.race
       const controller = new (require('abort-controller'))();
       const timeout = setTimeout(() => controller.abort(), fetchTimeoutMs);
+      console.log("headers", headers);
       response = await fetch(url, { headers, signal: controller.signal });
       clearTimeout(timeout);
       // Verificar si la solicitud fue exitosa
@@ -61,10 +65,12 @@ exports.handler = async function (event, context) {
 
     let contentType, buffer;
     if (!fetchError && response) {
+      console.log("response", response);
       // Obtener el tipo de contenido y los bytes de la imagen
       contentType = response.headers.get('content-type');
       buffer = await response.buffer();
     } else {
+      console.log("fetchError", fetchError);
       // Si fetch falla, intentar leer la imagen local
       const fs = require('fs').promises;
       const path = require('path');
@@ -77,6 +83,7 @@ exports.handler = async function (event, context) {
           buffer = await fs.readFile(defaultImagePath);
           contentType = 'image/jpeg';
         } else {
+          console.log("ip", `${ip}.jpg`);
           const imagePath = path.join(__dirname, 'images', `${ip}.jpg`);
           buffer = await fs.readFile(imagePath);
           contentType = 'image/jpeg';
